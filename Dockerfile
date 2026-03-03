@@ -6,10 +6,7 @@ RUN apt-get update && apt-get install -y \
     python3-opencv \
     git \
     i2c-tools \
-    libcamera-dev \
-    python3-libcamera \
     python3-gpiozero \
-    libcap-dev \
     portaudio19-dev \
     python3-pyaudio \
     && rm -rf /var/lib/apt/lists/*
