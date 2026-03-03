@@ -1,0 +1,44 @@
+# ROS2 / colcon build artifacts
+ws/build/
+ws/install/
+ws/log/
+
+# ROS2 bag files
+ws/bags/
+*.db3
+*.mcap
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Docker
+.dockerignore
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+.github/
