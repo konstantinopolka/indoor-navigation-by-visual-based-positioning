@@ -13,7 +13,7 @@ services:
       - ~/picar-x:/picar-x:ro
     environment:
       - ROS_DOMAIN_ID=0
-      - PYTHONPATH=/robot-hat:/picar-x:${PYTHONPATH:-}
+      - PYTHONPATH=/usr/lib/python3/dist-packages:/robot-hat:/picar-x:${PYTHONPATH:-}
     command: >
       bash -c "source /opt/ros/rolling/setup.bash &&
                cd /ws &&
@@ -32,7 +32,7 @@ services:
       - ~/picar-x:/picar-x:ro
     environment:
       - ROS_DOMAIN_ID=0
-      - PYTHONPATH=/robot-hat:/picar-x:${PYTHONPATH:-}
+      - PYTHONPATH=/usr/lib/python3/dist-packages:/robot-hat:/picar-x:${PYTHONPATH:-}
     command: >
       bash -c "source /opt/ros/rolling/setup.bash &&
                cd /ws &&
