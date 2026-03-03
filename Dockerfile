@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Make system Python packages (libcamera, gpiozero) visible to pip-installed packages
-ENV PYTHONPATH=/usr/lib/python3/dist-packages:${PYTHONPATH}
+ENV PYTHONPATH=/usr/lib/python3/dist-packages:${PYTHONPATH:-}
 
 # Python dependencies
 RUN pip3 install --break-system-packages \
