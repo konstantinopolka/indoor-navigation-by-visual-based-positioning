@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     python3-libcamera \
     python3-gpiozero \
     libcap-dev \
+    portaudio19-dev \
+    python3-pyaudio \
     && rm -rf /var/lib/apt/lists/*
 
 # ROS2 packages
@@ -21,16 +23,15 @@ RUN apt-get update && apt-get install -y \
     ros-rolling-rosbag2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Make system Python packages (libcamera, gpiozero) visible to pip-installed packages
-ENV PYTHONPATH=/usr/lib/python3/dist-packages:${PYTHONPATH:-}
+ENV PYTHONPATH=/usr/lib/python3/dist-packages
 
 # Python dependencies
 RUN pip3 install --break-system-packages \
     smbus2 \
     adafruit-pca9685 \
     rpi-ws281x \
-    picamera2 \
-    gpiozero
+    gpiozero \
+    pyaudio
 
 # Workspace setup
 RUN mkdir -p /ws/src
