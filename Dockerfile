@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-gpiozero \
     portaudio19-dev \
     python3-pyaudio \
+    python3-lgpio \
     && rm -rf /var/lib/apt/lists/*
 
 # ROS2 packages
@@ -45,7 +46,8 @@ RUN meson setup libcamera/build libcamera/ \
 RUN ninja -C libcamera/build/ install && ldconfig
 
 # Make libcamera Python bindings findable
-ENV PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3/dist-packages
+ENV PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages
+
 
 # Python dependencies
 RUN pip3 install --break-system-packages \
@@ -53,6 +55,7 @@ RUN pip3 install --break-system-packages \
     adafruit-pca9685 \
     rpi-ws281x \
     gpiozero \
+    lgpio
     pyaudio \
     picamera2
 
