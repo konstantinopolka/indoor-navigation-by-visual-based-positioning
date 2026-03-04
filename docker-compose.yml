@@ -24,7 +24,7 @@ services:
                ros2 run picarx_camera camera_node"
 
   motor:
-    image: picarx-ros:rolling
+    image: picarx-motor:rolling
     network_mode: host
     ipc: host
     privileged: true

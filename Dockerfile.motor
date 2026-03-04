@@ -1,0 +1,13 @@
+FROM picarx-ros:rolling
+
+# Motor-specific: ensure correct lgpio version is pip-installed
+# (overrides the apt version which may behave differently)
+RUN pip3 install --break-system-packages --upgrade \
+    lgpio \
+    gpiozero
+
+# Force the container user into the gpio group
+RUN groupadd -f gpio && usermod -aG gpio root
+
+WORKDIR /ws
+CMD ["bash"]
