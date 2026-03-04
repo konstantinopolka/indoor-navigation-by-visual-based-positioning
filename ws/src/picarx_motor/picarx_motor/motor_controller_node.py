@@ -3,10 +3,22 @@ import sys
 sys.path.insert(0, '/robot-hat')
 sys.path.insert(0, '/picar-x')
 
-# Force gpiozero to use lgpio with chip 0 BEFORE any robot_hat import
-from gpiozero.pins.lgpio import LGPIOFactory
+# Monkey-patch gpiozero's LGPIOFactory to force gpiochip0
+# This is required on RPi5 in Docker — gpiozero hardcodes gpiochip4
+# which is only a symlink; inside Docker the symlink does not resolve.
+# See: https://github.com/gpiozero/gpiozero/issues/1166
+import lgpio
+import gpiozero.pins.lgpio as _gz_lgpio
 from gpiozero import Device
-Device.pin_factory = LGPIOFactory(chip=0)
+
+def _patched_lgpio_init(self, chip=None):
+    _gz_lgpio.LGPIOFactory.__bases__[0].__init__(self)
+    self._handle = lgpio.gpiochip_open(0)   # force chip 0
+    self._chip = 0
+    self.pin_class = _gz_lgpio.LGPIOPin
+
+_gz_lgpio.LGPIOFactory.__init__ = _patched_lgpio_init
+Device.pin_factory = _gz_lgpio.LGPIOFactory()
 
 import rclpy
 from rclpy.node import Node
