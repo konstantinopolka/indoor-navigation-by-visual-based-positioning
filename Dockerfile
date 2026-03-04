@@ -55,7 +55,7 @@ RUN pip3 install --break-system-packages \
     adafruit-pca9685 \
     rpi-ws281x \
     gpiozero \
-    lgpio
+    lgpio \
     pyaudio \
     picamera2
 
