@@ -14,7 +14,7 @@ services:
       - /run/udev:/run/udev
     environment:
       - ROS_DOMAIN_ID=0
-      - PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/robot-hat:/picar-x
+      - PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/build/kmsxx/build/py:/robot-hat:/picar-x
     command: >
       bash -c "source /opt/ros/rolling/setup.bash &&
                cd /ws &&
@@ -28,13 +28,19 @@ services:
     ipc: host
     privileged: true
     working_dir: /ws
+    devices:
+      - /dev/gpiochip0:/dev/gpiochip0
+      - /dev/gpiochip4:/dev/gpiochip4
+      - /dev/i2c-1:/dev/i2c-1
     volumes:
       - ./ws:/ws
       - ~/robot-hat:/robot-hat:ro
       - ~/picar-x:/picar-x:ro
     environment:
       - ROS_DOMAIN_ID=0
-      - PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/robot-hat:/picar-x
+      - PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/build/kmsxx/build/py:/robot-hat:/picar-x
+      - GPIOZERO_PIN_FACTORY=lgpio
+      - LGPIO_CHIP=4
     command: >
       bash -c "source /opt/ros/rolling/setup.bash &&
                cd /ws &&

@@ -1,5 +1,6 @@
 FROM ros:rolling
 
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     meson \
@@ -17,9 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     i2c-tools \
     python3-gpiozero \
+    python3-lgpio \
     portaudio19-dev \
     python3-pyaudio \
-    python3-lgpio \
     && rm -rf /var/lib/apt/lists/*
 
 # ROS2 packages
@@ -31,7 +32,10 @@ RUN apt-get update && apt-get install -y \
     ros-rolling-rosbag2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone libcamera (pinned commit for picamera2 compatibility)
+# Use /build as working dir for compiling C++ libraries
+WORKDIR /build
+
+# libcamera — pinned commit for picamera2 compatibility
 RUN git clone https://github.com/raspberrypi/libcamera.git && \
     cd libcamera && \
     git checkout 6ddd79b
@@ -45,9 +49,13 @@ RUN meson setup libcamera/build libcamera/ \
 # Compile and install (separate layer — only re-runs if above changes)
 RUN ninja -C libcamera/build/ install && ldconfig
 
-# Make libcamera Python bindings findable
-ENV PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages
+# kmsxx — required by picamera2's DrmPreview (imported unconditionally)
+RUN git clone https://github.com/tomba/kmsxx.git
+RUN meson setup kmsxx/build kmsxx/ --buildtype=release
+RUN ninja -C kmsxx/build/ install && ldconfig
 
+# Python path: libcamera bindings (installed) + kmsxx bindings (build dir only)
+ENV PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/build/kmsxx/build/py
 
 # Python dependencies
 RUN pip3 install --break-system-packages \
@@ -59,7 +67,7 @@ RUN pip3 install --break-system-packages \
     pyaudio \
     picamera2
 
-# Workspace setup
+# Switch to ROS workspace
 RUN mkdir -p /ws/src
 WORKDIR /ws
 
