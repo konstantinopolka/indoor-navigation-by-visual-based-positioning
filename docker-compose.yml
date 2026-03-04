@@ -25,18 +25,21 @@ services:
 
   motor:
     image: picarx-motor:rolling
+    tty: true
     network_mode: host
     ipc: host
     privileged: true
     working_dir: /ws
     devices:
       - /dev/gpiochip0:/dev/gpiochip0    # RPi5 GPIO (pinctrl-rp1, 54 lines)
+      # - /dev/gpiomem4:/dev/gpiomem4      # RPi5 GPIO memory-mapped access
       - /dev/i2c-1:/dev/i2c-1            # Robot HAT confirmed at 0x14
     volumes:
       - ./ws:/ws
       - ~/robot-hat:/robot-hat:ro
       - ~/picar-x:/picar-x:ro
     environment:
+      - USER=root
       - ROS_DOMAIN_ID=0
       - PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/build/kmsxx/build/py:/robot-hat:/picar-x
       - GPIOZERO_PIN_FACTORY=lgpio

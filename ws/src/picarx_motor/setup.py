@@ -1,3 +1,14 @@
+import os
+# os.getlogin() fails in Docker (no TTY) — patch it to use env var instead
+_orig_getlogin = os.getlogin
+def _safe_getlogin():
+    try:
+        return _orig_getlogin()
+    except OSError:
+        return os.environ.get('USER', os.environ.get('LOGNAME', 'root'))
+os.getlogin = _safe_getlogin
+
+
 from setuptools import setup
 
 package_name = 'picarx_motor'

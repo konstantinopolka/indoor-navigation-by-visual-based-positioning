@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+import os
+# os.getlogin() fails in Docker (no TTY) — patch it to use env var instead
+_orig_getlogin = os.getlogin
+def _safe_getlogin():
+    try:
+        return _orig_getlogin()
+    except OSError:
+        return os.environ.get('USER', os.environ.get('LOGNAME', 'root'))
+os.getlogin = _safe_getlogin
+
+
+
 import sys
 sys.path.insert(0, '/robot-hat')
 sys.path.insert(0, '/picar-x')
