@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
+import sys
+sys.path.insert(0, '/robot-hat')
+sys.path.insert(0, '/picar-x')
+
+# Force gpiozero to use lgpio with chip 0 BEFORE any robot_hat import
+from gpiozero.pins.lgpio import LGPIOFactory
+from gpiozero import Device
+Device.pin_factory = LGPIOFactory(chip=0)
+
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-import sys
-
-sys.path.append('/robot-hat')
-sys.path.append('/picar-x')
 from picarx import Picarx
-
 
 class PiCarXMotorNode(Node):
     def __init__(self):
