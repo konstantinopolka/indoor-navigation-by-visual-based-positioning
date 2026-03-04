@@ -24,6 +24,7 @@ services:
   motor:
     image: picarx-ros:rolling
     network_mode: host
+    ipc: host
     privileged: true
     working_dir: /ws
     volumes:
@@ -66,3 +67,4 @@ services:
                ros2 bag record /camera/image_raw /camera/camera_info /cmd_vel"
     depends_on:
       - camera
+      - motor

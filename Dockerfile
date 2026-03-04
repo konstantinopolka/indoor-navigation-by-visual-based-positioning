@@ -1,7 +1,17 @@
 FROM ros:rolling
 
-# System dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    meson \
+    ninja-build \
+    pkg-config \
+    libyaml-dev \
+    python3-yaml \
+    python3-ply \
+    python3-jinja2 \
+    libevent-dev \
+    libdrm-dev \
+    libcap-dev \
     python3-pip \
     python3-opencv \
     git \
@@ -20,7 +30,22 @@ RUN apt-get update && apt-get install -y \
     ros-rolling-rosbag2 \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PYTHONPATH=/usr/lib/python3/dist-packages
+# Clone libcamera (pinned commit for picamera2 compatibility)
+RUN git clone https://github.com/raspberrypi/libcamera.git && \
+    cd libcamera && \
+    git checkout 6ddd79b
+
+# Configure build (separate layer — cached if meson succeeds)
+RUN meson setup libcamera/build libcamera/ \
+    -Dpipelines=rpi/vc4,rpi/pisp \
+    -Dipas=rpi/vc4,rpi/pisp \
+    --buildtype=release
+
+# Compile and install (separate layer — only re-runs if above changes)
+RUN ninja -C libcamera/build/ install && ldconfig
+
+# Make libcamera Python bindings findable
+ENV PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3/dist-packages
 
 # Python dependencies
 RUN pip3 install --break-system-packages \
@@ -28,7 +53,8 @@ RUN pip3 install --break-system-packages \
     adafruit-pca9685 \
     rpi-ws281x \
     gpiozero \
-    pyaudio
+    pyaudio \
+    picamera2
 
 # Workspace setup
 RUN mkdir -p /ws/src
