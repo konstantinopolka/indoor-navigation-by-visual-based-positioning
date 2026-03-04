@@ -12,6 +12,7 @@ services:
       - ~/robot-hat:/robot-hat:ro
       - ~/picar-x:/picar-x:ro
       - /run/udev:/run/udev
+      - /dev/dri:/dev/dri
     environment:
       - ROS_DOMAIN_ID=0
       - PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/build/kmsxx/build/py:/robot-hat:/picar-x
@@ -29,9 +30,8 @@ services:
     privileged: true
     working_dir: /ws
     devices:
-      - /dev/gpiochip0:/dev/gpiochip0
-      - /dev/gpiochip4:/dev/gpiochip4
-      - /dev/i2c-1:/dev/i2c-1
+      - /dev/gpiochip0:/dev/gpiochip0    # RPi5 GPIO (pinctrl-rp1, 54 lines)
+      - /dev/i2c-1:/dev/i2c-1            # Robot HAT confirmed at 0x14
     volumes:
       - ./ws:/ws
       - ~/robot-hat:/robot-hat:ro
@@ -40,13 +40,13 @@ services:
       - ROS_DOMAIN_ID=0
       - PYTHONPATH=/usr/local/lib/aarch64-linux-gnu/python3.12/site-packages:/build/kmsxx/build/py:/robot-hat:/picar-x
       - GPIOZERO_PIN_FACTORY=lgpio
-      - LGPIO_CHIP=4
+      - LGPIO_CHIP=0                     # gpiochip0 = the real chip on RPi5
     command: >
       bash -c "source /opt/ros/rolling/setup.bash &&
-               cd /ws &&
-               colcon build --packages-select picarx_motor &&
-               source install/setup.bash &&
-               ros2 run picarx_motor motor_controller_node"
+              cd /ws &&
+              colcon build --packages-select picarx_motor &&
+              source install/setup.bash &&
+              ros2 run picarx_motor motor_controller_node"
 
   teleop:
     image: picarx-ros:rolling
