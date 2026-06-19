@@ -39,12 +39,13 @@ run_recorder:
 # 	@echo "  4) make run_recorder"
 
 run_all:
-	@echo "[RUN] Starting camera, motor, teleop, and recorder (each in its own terminal)."
-	@echo "Open four terminals on the Pi and run:"
-	@echo "  1) make run_camera"
-	@echo "  2) make run_motor"
-	@echo "  3) make run_teleop"
-	@echo "  4) make run_recorder"
+	@echo "[RUN] Starting full MVP launch..."
+	$(SHELL) -c "$(SETUP) && ros2 launch picarx_bringup mvp_launch.py"
+
+run_all_tmux:
+	@echo "[RUN] Starting full MVP in tmux..."
+	@tmux new-session -d -s picarx_mvp "$(SHELL) -lc '$(SETUP) && ros2 launch picarx_bringup mvp_launch.py'"
+	@tmux attach -t picarx_mvp
 
 clean:
 	@echo "[CLEAN] Removing build/ install/ log/ in ws..."
