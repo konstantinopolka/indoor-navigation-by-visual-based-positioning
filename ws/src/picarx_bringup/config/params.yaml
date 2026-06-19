@@ -1,0 +1,15 @@
+# Parameters for the Camera Node
+picarx_camera_node:
+  ros__parameters:
+    image_width: 640
+    image_height: 480
+    fps: 30
+    frame_id: "camera_optical_frame"
+    # camera_topic: "/camera/image_raw"
+    # camera_info_topic: "/camera/camera_info"
+
+# Parameters for the Motor Controller Node
+picarx_motor_node:
+  ros__parameters:
+    max_speed: 100
+    # cmd_vel_topic: "/cmd_vel"

@@ -14,7 +14,8 @@ all: build
 
 build:
 	@echo "[BUILD] Building colcon workspace..."
-	cd $(WS_DIR) && source $(HOME)/ros2_jazzy/install/setup.bash && colcon build --symlink-install --packages-select picarx_camera picarx_motor picarx_bringup teleop_twist_keyboard orbslam3_pose
+# 	cd $(WS_DIR) && source $(HOME)/ros2_jazzy/install/setup.bash && colcon build --symlink-install --packages-select 
+	cd $(WS_DIR) && source $(HOME)/ros2_jazzy/install/setup.bash && colcon build --symlink-install --packages-select picarx_interfaces picarx_camera picarx_motor picarx_bringup teleop_twist_keyboard orbslam3_pose
 
 run_camera:
 	@echo "[RUN] Starting picarx_camera_node..."
