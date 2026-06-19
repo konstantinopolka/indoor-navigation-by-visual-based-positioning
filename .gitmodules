@@ -1,3 +1,6 @@
 [submodule "ws/src/orb_slam3_ros2_mono_publisher"]
 	path = ws/src/orb_slam3_ros2_mono_publisher
 	url = https://github.com/konstantinopolka/orb_slam3_ros2_mono_publisher
+[submodule "ws/src/teleop_twist_keyboard"]
+	path = ws/src/teleop_twist_keyboard
+	url = https://github.com/ros2/teleop_twist_keyboard.git
