@@ -13,6 +13,7 @@
   <exec_depend>picarx_camera</exec_depend>
   <exec_depend>picarx_motor</exec_depend>
   <exec_depend>orbslam3_pose</exec_depend>
+  <exec_depend>picarx_interfaces</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

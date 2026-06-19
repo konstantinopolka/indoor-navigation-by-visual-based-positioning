@@ -6,13 +6,17 @@ from cv_bridge import CvBridge
 from picamera2 import Picamera2
 import numpy as np
 
+from picarx_interfaces.topics import (
+    CAMERA_IMAGE_RAW, CAMERA_INFO
+)
+
 class PiCarXCameraNode(Node):
     def __init__(self):
         super().__init__('picarx_camera_node')
 
         # Publishers
-        self.image_pub = self.create_publisher(Image, '/camera/image_raw', 10)
-        self.info_pub = self.create_publisher(CameraInfo, '/camera/camera_info', 10)
+        self.image_pub = self.create_publisher(Image, CAMERA_IMAGE_RAW, 10)
+        self.info_pub = self.create_publisher(CameraInfo, CAMERA_INFO, 10)
 
         # CV Bridge (OpenCV <-> ROS Image converter)
         self.bridge = CvBridge()

@@ -37,6 +37,8 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from picarx import Picarx
 
+from picarx_interfaces.topics import CMD_VEL
+
 class PiCarXMotorNode(Node):
     def __init__(self):
         super().__init__('picarx_motor_node')
@@ -47,7 +49,7 @@ class PiCarXMotorNode(Node):
         # Subscriber for cmd_vel
         self.subscription = self.create_subscription(
             Twist,
-            '/cmd_vel',
+            CMD_VEL,
             self.cmd_vel_callback,
             10
         )
