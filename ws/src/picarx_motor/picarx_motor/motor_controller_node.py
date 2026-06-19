@@ -62,6 +62,7 @@ class PiCarXMotorNode(Node):
         speed = int(linear * 50)   # max 50 PWM
         angle = int(angular * 30)  # max ±30° steering angle
 
+        angle = -angle  # Invert angle to match direction from teleop
         # Send to PiCar-X
         self.px.set_dir_servo_angle(angle)
         if linear > 0:
