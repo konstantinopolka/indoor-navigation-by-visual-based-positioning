@@ -56,7 +56,7 @@ all.stop:
 
 all.clean:
 	@echo "[ALL] Cleaning workspace build/install/log and PID files..."
-	cd $(WS_DIR) && rm -rf build install log
+	rm -rf build install log
 	@rm -rf $(PID_DIR)
 
 ###############################################################################
@@ -88,7 +88,7 @@ camera.stop:
 
 camera.clean:
 	@echo "[CAMERA] Cleaning picarx_camera from build/install..."
-	cd $(WS_DIR) && rm -rf build/picarx_camera install/picarx_camera
+	rm -rf build/picarx_camera install/picarx_camera
 
 ###############################################################################
 # MOTOR SECTION
@@ -119,7 +119,7 @@ motor.stop:
 
 motor.clean:
 	@echo "[MOTOR] Cleaning picarx_motor from build/install..."
-	cd $(WS_DIR) && rm -rf build/picarx_motor install/picarx_motor
+	rm -rf build/picarx_motor install/picarx_motor
 
 ###############################################################################
 # TELEOP SECTION
@@ -134,7 +134,7 @@ teleop.build:
 teleop.run:
 	@echo "[TELEOP] Starting teleop_twist_keyboard in the current terminal..."
 	@echo "[TELEOP] Use this terminal to send key commands; CTRL-C to quit."
-	$(SHELL) -c "$(SETUP) && ros2 run teleop_twist_keyboard teleop_twist_keyboard"
+	$(SHELL) -c "$(SETUP) && python3 $(SRC_DIR)/picarx_bringup/picarx_bringup/scripts/run_teleop.py"
 
 # teleop.stop is mostly symbolic, because teleop.run blocks until CTRL-C
 teleop.stop:
@@ -142,7 +142,7 @@ teleop.stop:
 
 teleop.clean:
 	@echo "[TELEOP] Cleaning teleop_twist_keyboard from build/install..."
-	cd $(WS_DIR) && rm -rf build/teleop_twist_keyboard install/teleop_twist_keyboard
+	rm -rf build/teleop_twist_keyboard install/teleop_twist_keyboard
 
 ###############################################################################
 # SLAM SECTION (orbslam3_pose wrapper node)
@@ -173,7 +173,7 @@ slam.stop:
 
 slam.clean:
 	@echo "[SLAM] Cleaning orbslam3_pose from build/install..."
-	cd $(WS_DIR) && rm -rf build/orbslam3_pose install/orbslam3_pose
+	rm -rf build/orbslam3_pose install/orbslam3_pose
 
 ###############################################################################
 # RECORDER (optional manual control)
@@ -182,8 +182,7 @@ slam.clean:
 recorder.run:
 	@echo "[RECORDER] Recording topics to rosbag2 (camera + cmd_vel)..."
 	@mkdir -p bags
-	$(SHELL) -c "$(SETUP) && cd bags && ros2 bag record \
-		/camera/image_raw /camera/camera_info /cmd_vel"
+	$(SHELL) -c "$(SETUP) && python3 $(SRC_DIR)/picarx_bringup/picarx_bringup/scripts/run_recorder.py"
 
 recorder.stop:
 	@echo "[RECORDER] Stop the recorder with Ctrl-C in the recorder terminal."
