@@ -7,6 +7,7 @@ ws/log/
 ws/bags/
 *.db3
 *.mcap
+bags/*
 
 # Python
 __pycache__/
