@@ -1,0 +1,27 @@
+# =======================================================
+# Truncate Massive SLAM Dataset Dumps & Trajectory Logs
+# =======================================================
+# Ignore all dense IMU data streams and timestamp vectors inside the submodules
+**/TUM_IMU/*.txt
+**/EuRoC_IMU/*.txt
+**/TUM_TimeStamps/*.txt
+**/EuRoC_TimeStamps/*.txt
+
+# Alternative blanket rule: Ignore all plain text logging dumps in the config directory
+ws/src/orb_slam3_ros2_mono_publisher/config/**/*.txt
+
+# =======================================================
+# Submodule Structural Cleanup (teleop_twist_keyboard, etc)
+# =======================================================
+# Ignore legal clauses, change logs, and default linter workflows
+**/CHANGELOG.rst
+**/LICENSE
+**/CONTRIBUTING.md
+**/test/test_*.py
+**/test/test_*.cpp
+
+# Ignore every single YAML file inside the config directory
+ws/src/orb_slam3_ros2_mono_publisher/config/**/*.yaml
+
+# EXCEPT for calib.yaml
+!**/calib.yaml
