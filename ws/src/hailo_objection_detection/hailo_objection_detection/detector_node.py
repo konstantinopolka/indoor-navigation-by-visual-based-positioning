@@ -1,3 +1,7 @@
+import sys
+# Force inject the system package path where hailo_platform lives before ROS isolates it
+sys.path.append('/usr/lib/python3/dist-packages')
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
