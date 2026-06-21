@@ -13,11 +13,12 @@ VOCAB   := $(SRC_DIR)/orb_slam3_ros2_mono_publisher/vocabulary/ORBvoc.txt
 CFG     := $(SRC_DIR)/orb_slam3_ros2_mono_publisher/config/monocular/calib.yaml
 
 # PID files so we can stop nodes started via make
-PID_DIR     := .pids
-CAMERA_PID  := $(PID_DIR)/camera.pid
-MOTOR_PID   := $(PID_DIR)/motor.pid
-TELEOP_PID  := $(PID_DIR)/teleop.pid
-SLAM_PID    := $(PID_DIR)/slam.pid
+PID_DIR        := .pids
+CAMERA_PID     := $(PID_DIR)/camera.pid
+MOTOR_PID      := $(PID_DIR)/motor.pid
+TELEOP_PID     := $(PID_DIR)/teleop.pid
+SLAM_PID       := $(PID_DIR)/slam.pid
+DETECTION_PID  := $(PID_DIR)/detection.pid
 
 .PHONY: \
 	all all.build all.run all.stop all.clean \
@@ -25,6 +26,7 @@ SLAM_PID    := $(PID_DIR)/slam.pid
 	motor.build motor.run motor.stop motor.clean \
 	teleop.build teleop.run teleop.stop teleop.clean \
 	slam.build slam.run slam.stop slam.clean \
+	detection.build detection.run detection.stop detection.clean \
 	recorder.run recorder.stop
 
 ###############################################################################
@@ -40,7 +42,8 @@ all.build:
 		source $(HOME)/ros2_jazzy/install/setup.bash && \
 		colcon build --symlink-install \
 			--packages-select picarx_interfaces picarx_camera picarx_motor \
-			                  picarx_bringup teleop_twist_keyboard orbslam3_pose
+			                  picarx_bringup hailo_object_detection \
+				                  teleop_twist_keyboard orbslam3_pose
 
 # Use the bringup launch as the "all.run"
 all.run:
@@ -53,6 +56,7 @@ all.stop:
 	$(MAKE) motor.stop
 	$(MAKE) teleop.stop
 	$(MAKE) slam.stop
+	$(MAKE) detection.stop
 
 all.clean:
 	@echo "[ALL] Cleaning workspace build/install/log and PID files..."
@@ -186,3 +190,34 @@ recorder.run:
 
 recorder.stop:
 	@echo "[RECORDER] Stop the recorder with Ctrl-C in the recorder terminal."
+
+###############################################################################
+# OBJECT DETECTION
+#################################################################################
+
+detection.build:
+	@echo "[HAILO] Building hailo_object_detection..."
+	cd $(WS_DIR) && \
+		source $(HOME)/ros2_jazzy/install/setup.bash && \
+		colcon build --symlink-install --packages-select hailo_object_detection
+
+detection.run:
+	@echo "[HAILO] Starting Hailo object detection node..."
+	@mkdir -p $(PID_DIR)
+	@$(SHELL) -c "$(SETUP) && ros2 run hailo_object_detection detector_node & echo $$! > $(DETECTION_PID)"
+	@echo "[HAILO] PID stored in $(DETECTION_PID)"
+
+detection.stop:
+	@echo "[HAILO] Stopping Hailo object detection node (if running)..."
+	@if [ -f $(DETECTION_PID) ]; then \
+		PID=$$(cat $(DETECTION_PID)); \
+		echo "[HAILO] Killing PID $$PID"; \
+		kill $$PID 2>/dev/null || true; \
+		rm -f $(DETECTION_PID); \
+	else \
+		echo "[HAILO] No PID file, nothing to stop."; \
+	fi
+
+detection.clean:
+	@echo "[HAILO] Cleaning hailo_object_detection from build/install..."
+	rm -rf build/hailo_object_detection install/hailo_object_detection

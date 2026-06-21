@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ROS 2 Jazzy monocular visual SLAM pipeline for the PiCar-X robot (Raspberry Pi 5). A camera node streams images to ORB-SLAM3, a motor node drives the car from `/cmd_vel` Twist messages, and teleop provides keyboard control. The launch file ties everything together with automatic rosbag2 recording for offline analysis.
+ROS 2 Jazzy monocular visual SLAM pipeline for the PiCar-X robot (Raspberry Pi 5). A camera node streams images to ORB-SLAM3 and a Hailo-8 NPU object detection node, a motor node drives the car from `/cmd_vel` Twist messages, and teleop provides keyboard control. The launch file ties everything together with automatic rosbag2 recording for offline analysis.
 
 ## Prerequisites / Environment
 
 - **ROS 2 Jazzy** built from source under `~/ros2_jazzy` (not a system package — all `source` paths point to `~/ros2_jazzy/install/setup.bash`).
 - **Python dependencies**: `picamera2`, `cv_bridge`, `lgpio`, `gpiozero` (PiCar-X libraries at `/robot-hat` and `/picar-x`).
+- **Hailo-8 NPU**: `hailo_platform` Python library (system package under `/usr/lib/python3/dist-packages`). Requires HailoRT PCIe driver and a HEF model file. The detection node works around ROS's isolated Python path by injecting `/usr/lib/python3/dist-packages` into `sys.path`.
 - **ORB-SLAM3**: external submodule at `ws/src/orb_slam3_ros2_mono_publisher` (C++ package `orbslam3_pose`). Needs vocabulary file at `vocabulary/ORBvoc.txt` and calibration at `config/monocular/calib.yaml`.
 - **teleop_twist_keyboard**: external ROS 2 package under `ws/src/`.
 - **Hardware**: PiCar-X robot hat with I2C motor control, Picamera2 camera, Raspberry Pi 5 GPIO (must use `gpiochip0`, not the default `gpiochip4` — the motor node monkey-patches `gpiozero` for this).
@@ -25,32 +26,35 @@ source ~/ros2_jazzy/install/setup.bash && source ws/install/setup.bash
 ### Build
 
 ```bash
-make all.build      # build everything (interfaces, camera, motor, bringup, teleop, SLAM)
-make camera.build   # build only picarx_camera
-make motor.build    # build only picarx_motor
-make slam.build     # build only orbslam3_pose
-make teleop.build   # build only teleop_twist_keyboard
+make all.build        # build everything (interfaces, camera, motor, detection, bringup, teleop, SLAM)
+make camera.build     # build only picarx_camera
+make motor.build      # build only picarx_motor
+make detection.build  # build only hailo_object_detection
+make slam.build       # build only orbslam3_pose
+make teleop.build     # build only teleop_twist_keyboard
 ```
 
 ### Run
 
 ```bash
-make all.run        # full system via launch file (camera + motor + SLAM + recorder)
-make camera.run     # camera node in background (PID stored in .pids/)
-make motor.run      # motor node in background
-make slam.run       # ORB-SLAM3 mono node in background
-make teleop.run     # keyboard teleop in foreground (must have real TTY)
-make recorder.run   # rosbag2 recording in foreground
+make all.run          # full system via launch file (camera + motor + detection + SLAM + recorder)
+make camera.run       # camera node in background (PID stored in .pids/)
+make motor.run        # motor node in background
+make detection.run    # Hailo object detection node in background
+make slam.run         # ORB-SLAM3 mono node in background
+make teleop.run       # keyboard teleop in foreground (must have real TTY)
+make recorder.run     # rosbag2 recording in foreground
 ```
 
 ### Stop
 
 ```bash
-make camera.stop    # kill via saved PID
+make camera.stop      # kill via saved PID
 make motor.stop
+make detection.stop
 make slam.stop
-make all.stop       # stop all background nodes
-make all.clean      # wipe build/, install/, log/, and .pids/
+make all.stop         # stop all background nodes
+make all.clean        # wipe build/, install/, log/, and .pids/
 ```
 
 ## Architecture
@@ -60,17 +64,19 @@ make all.clean      # wipe build/, install/, log/, and .pids/
 ```
 picarx_interfaces  (shared topic/node name constants — no runtime dependencies)
      ↑
-     ├── picarx_camera     (publishes /camera/image_raw, /camera/camera_info)
-     ├── picarx_motor      (subscribes /cmd_vel → drives PiCar-X motors)
-     ├── picarx_bringup    (launch file + teleop/recorder launcher scripts)
-     └── orbslam3_pose     (C++; subscribes /camera/image_raw, publishes pose/map topics)
+     ├── picarx_camera              (publishes /camera/image_raw, /camera/camera_info)
+     ├── picarx_motor               (subscribes /cmd_vel → drives PiCar-X motors)
+     ├── hailo_object_detection     (subscribes /camera/image_raw → Hailo-8 YOLOv8 → publishes /hailo/detections)
+     ├── picarx_bringup             (launch file + teleop/recorder launcher scripts)
+     └── orbslam3_pose              (C++; subscribes /camera/image_raw, publishes pose/map topics)
 ```
 
 ### Topic Flow
 
 ```
 [camera] ──/camera/image_raw──→ [orbslam3_pose] ──/pose_orb1, /pose_orb2, /odom, /tracked_mappoints──→ [rosbag2]
-                                    ↑
+     │                              ↑
+     └──→ [hailo_detector] ──/hailo/detections──→ [rosbag2]
 [teleop_twist_keyboard] ──/cmd_vel──→ [motor]  (Twist → PWM speed + servo angle)
 ```
 
@@ -80,9 +86,10 @@ All topic names are centralized in `picarx_interfaces/topics.py`. Node names are
 
 | File | Role |
 |------|------|
-| `ws/src/picarx_bringup/launch/mvp_launch.py` | Master launch: starts camera, motor, SLAM, recorder; shuts down if any node exits |
+| `ws/src/picarx_bringup/launch/mvp_launch.py` | Master launch: starts camera, motor, detection, SLAM, recorder; shuts down if any node exits |
 | `ws/src/picarx_camera/picarx_camera/camera_node.py` | Picamera2 → ROS Image publisher (~30 FPS, 640×480 RGB) |
 | `ws/src/picarx_motor/picarx_motor/motor_controller_node.py` | Twist subscriber → `Picarx()` motor commands |
+| `ws/src/hailo_object_detection/hailo_object_detection/detector_node.py` | Subscribes `/camera/image_raw` → Hailo-8 NPU YOLOv8 inference → publishes `/hailo/detections` (`vision_msgs/Detection2DArray`) |
 | `ws/src/picarx_interfaces/picarx_interfaces/topics.py` | Single source of truth for all ROS topic names |
 | `ws/src/picarx_interfaces/picarx_interfaces/nodes.py` | Single source of truth for all ROS node names |
 | `ws/src/picarx_bringup/picarx_bringup/scripts/run_teleop.py` | Wraps `teleop_twist_keyboard` with dynamic `--ros-args` remapping from topic constants |

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 # Force inject the system package path where hailo_platform lives before ROS isolates it
 sys.path.append('/usr/lib/python3/dist-packages')
@@ -14,6 +15,7 @@ import numpy as np
 from hailo_platform import (HEF, VDevice, HailoStreamInterface, InferVStreams, 
                             ConfigureParams, InputVStreamParams, OutputVStreamParams, FormatType)
 
+from picarx_interfaces.nodes import DETECTION_NODE
 from picarx_interfaces.topics import (
     CAMERA_IMAGE_RAW,
     DETECTIONS,
@@ -23,7 +25,7 @@ HEF_PATH = '/usr/local/hailo/resources/models/hailo8/yolov8m.hef'  # Update this
 
 class HailoObjectDetectionNode(Node):
     def __init__(self):
-        super().__init__('hailo_detector_node')
+        super().__init__(DETECTION_NODE)
         
         # ROS 2 Pub/Sub
         self.bridge = CvBridge()

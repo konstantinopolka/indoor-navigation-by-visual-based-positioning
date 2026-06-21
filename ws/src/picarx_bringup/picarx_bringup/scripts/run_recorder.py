@@ -17,6 +17,7 @@ from picarx_interfaces.topics import (
     ODOM,
     TRACKED_MAPPOINTS,
     TRACKING_IMAGE,
+    DETECTIONS,
 )
 
 # All topics to record — edit this list here if you add/remove topics.
@@ -30,6 +31,7 @@ TOPICS_TO_RECORD = [
     ODOM,
     TRACKED_MAPPOINTS,
     TRACKING_IMAGE,
+    DETECTIONS,
 ]
 
 def main():

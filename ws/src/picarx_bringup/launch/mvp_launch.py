@@ -18,9 +18,10 @@ from datetime import datetime
 from picarx_interfaces.topics import (
     CAMERA_IMAGE_RAW, CAMERA_INFO, CMD_VEL,
     POSE_ORB1, POSE_ORB2, ODOM,
-    TRACKED_MAPPOINTS, TRACKING_IMAGE, ALL_MAPPOINTS
+    TRACKED_MAPPOINTS, TRACKING_IMAGE, ALL_MAPPOINTS,
+    DETECTIONS,
 )
-from picarx_interfaces.nodes import CAMERA_NODE, MOTOR_NODE, SLAM_NODE
+from picarx_interfaces.nodes import CAMERA_NODE, MOTOR_NODE, SLAM_NODE, DETECTION_NODE
 
 bag_output = 'bags/mvp_bag_' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
@@ -53,6 +54,13 @@ def generate_launch_description():
         # parameters=[params_file]
     )
 
+    detection_node = Node(
+        package='hailo_object_detection',
+        executable='detector_node',
+        name=DETECTION_NODE,
+        output='screen',
+    )
+
     # Note that it has more arguments than the command in Makefile because we want to record more topics for better debugging and analysis.
     recorder_node = ExecuteProcess(
         cmd=[
@@ -66,6 +74,7 @@ def generate_launch_description():
             ODOM,
             TRACKED_MAPPOINTS,
             TRACKING_IMAGE,
+            DETECTIONS,
         ],
         output='screen',
         condition=IfCondition(start_recorder),
@@ -131,6 +140,16 @@ def generate_launch_description():
         )
     )
 
+    shutdown_on_detection_exit = RegisterEventHandler(
+        OnProcessExit(
+            target_action=detection_node,
+            on_exit=[
+                LogInfo(msg='Hailo detection node exited. Shutting down launch.'),
+                EmitEvent(event=Shutdown(reason='detection node exited')),
+            ],
+        )
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'start_recorder',
@@ -139,10 +158,12 @@ def generate_launch_description():
         ),
         camera_node,
         motor_node,
+        detection_node,
         recorder_node,
         monocular_slam_node,
         shutdown_on_camera_exit,
         shutdown_on_motor_exit,
         shutdown_on_recorder_exit,
         shutdown_on_slam_exit,
+        shutdown_on_detection_exit,
     ])

@@ -1,6 +1,6 @@
 # PiCar-X ROS2 Jazzy Makefile Overview
 
-This document summarizes how the  `Makefile` for the PiCar-X ROS 2 Jazzy MVP is structured and how to use it to build and run the different components (camera, motor, teleop, SLAM, recorder, and full bringup).
+This document summarizes how the  `Makefile` for the PiCar-X ROS 2 Jazzy MVP is structured and how to use it to build and run the different components (camera, motor, teleop, SLAM, detection, recorder, and full bringup).
 
 The Makefile lives in the project root:
 
@@ -31,6 +31,7 @@ ws/src/
 ├── picarx_interfaces          # Shared topic and node name constants
 ├── picarx_camera              # Camera node
 ├── picarx_motor               # Motor controller node
+├── hailo_object_detection     # Hailo-8 NPU YOLOv8 object detection node
 ├── picarx_bringup             # Launch file, recorder and teleop scripts
 ├── teleop_twist_keyboard      # External keyboard teleop package
 └── orb_slam3_ros2_mono_publisher  # ORB-SLAM3 monocular wrapper (orbslam3_pose)
@@ -78,13 +79,14 @@ Key variables at the top of the Makefile:
 
 - PID management for background nodes:
   ```make
-  PID_DIR    := .pids
-  CAMERA_PID := $(PID_DIR)/camera.pid
-  MOTOR_PID  := $(PID_DIR)/motor.pid
-  SLAM_PID   := $(PID_DIR)/slam.pid
+  PID_DIR        := .pids
+  CAMERA_PID     := $(PID_DIR)/camera.pid
+  MOTOR_PID      := $(PID_DIR)/motor.pid
+  SLAM_PID       := $(PID_DIR)/slam.pid
+  DETECTION_PID  := $(PID_DIR)/detection.pid
   ```
 
-PID files are used to stop camera, motor, and SLAM nodes started in the background.
+PID files are used to stop camera, motor, detection, and SLAM nodes started in the background.
 
 ---
 
@@ -101,7 +103,8 @@ all.build:
 		source $(HOME)/ros2_jazzy/install/setup.bash && \
 		colcon build \
 			--packages-select picarx_interfaces picarx_camera picarx_motor \
-			                  picarx_bringup teleop_twist_keyboard orbslam3_pose
+			                  picarx_bringup hailo_object_detection \
+				                  teleop_twist_keyboard orbslam3_pose
 ```
 
 This compiles:
@@ -110,6 +113,7 @@ This compiles:
 - `picarx_camera`
 - `picarx_motor`
 - `picarx_bringup` (launch file + teleop/recorder scripts)
+- `hailo_object_detection` (Hailo-8 YOLOv8 object detection)
 - `teleop_twist_keyboard`
 - `orbslam3_pose` (ORB-SLAM3 wrapper)
 
@@ -139,6 +143,7 @@ This starts:
 
 - Camera node (`picarx_camera`)
 - Motor node (`picarx_motor`)
+- Hailo object detection node (`hailo_object_detection`)
 - Recorder (`ros2 bag record` with topics defined via `picarx_interfaces` constants)
 - ORB-SLAM3 mono node (`orbslam3_pose`)
 
@@ -152,6 +157,7 @@ all.stop:
 	$(MAKE) motor.stop
 	$(MAKE) teleop.stop
 	$(MAKE) slam.stop
+	$(MAKE) detection.stop
 ```
 
 ### `make all.clean`
@@ -303,6 +309,69 @@ Stops the SLAM node using the stored PID file.
 Removes the SLAM package's build/install artifacts.
 
 ---
+## Detection Section (`detection.*`)
+
+Controls the Hailo-8 NPU YOLOv8 object detection node `hailo_object_detection`.
+
+### `make detection.build`
+
+Builds only the detection package:
+
+```make
+detection.build:
+	@echo "[HAILO] Building hailo_object_detection..."
+	cd $(WS_DIR) && \
+		source $(HOME)/ros2_jazzy/install/setup.bash && \
+		colcon build --symlink-install --packages-select hailo_object_detection
+```
+
+### `make detection.run`
+
+Runs the Hailo object detection node in the background:
+
+```make
+detection.run:
+	@echo "[HAILO] Starting Hailo object detection node..."
+	@mkdir -p $(PID_DIR)
+	@$(SHELL) -c "$(SETUP) && ros2 run hailo_object_detection detector_node & echo $$! > $(DETECTION_PID)"
+	@echo "[HAILO] PID stored in $(DETECTION_PID)"
+```
+
+The node subscribes to `/camera/image_raw` (`CAMERA_IMAGE_RAW`) and publishes:
+
+- `/hailo/detections` — `vision_msgs/Detection2DArray` with bounding boxes, class IDs, and confidence scores
+
+Requires a Hailo-8 NPU with HailoRT driver and a YOLOv8 HEF model file.
+
+### `make detection.stop`
+
+Stops the detection node using the stored PID file.
+
+```make
+detection.stop:
+	@echo "[HAILO] Stopping Hailo object detection node (if running)..."
+	@if [ -f $(DETECTION_PID) ]; then \
+		PID=$$(cat $(DETECTION_PID)); \
+		echo "[HAILO] Killing PID $$PID"; \
+		kill $$PID 2>/dev/null || true; \
+		rm -f $(DETECTION_PID); \
+	else \
+		echo "[HAILO] No PID file, nothing to stop."; \
+	fi
+```
+
+### `make detection.clean`
+
+Removes only the detection package's build/install artifacts.
+
+```make
+detection.clean:
+	@echo "[HAILO] Cleaning hailo_object_detection from build/install..."
+	rm -rf build/hailo_object_detection install/hailo_object_detection
+```
+
+
+---
 
 ## Recorder Section (`recorder.*`)
 
@@ -327,6 +396,7 @@ The script reads the topic list from `picarx_interfaces` constants and records t
 - `/odom`
 - `/tracked_mappoints`
 - `/tracking_image`
+- `/hailo/detections` (Hailo-8 YOLOv8 object detections)
 
 Stop with `Ctrl-C`.
 
@@ -349,19 +419,22 @@ make all.run        # run full MVP via launch file
 
 ### 2. Debugging nodes individually
 
-Example: camera + SLAM + teleop in separate terminals:
+Example: camera + detection + SLAM + teleop in separate terminals:
 
 ```bash
 # Terminal 1 – camera (background)
 make camera.run
 
-# Terminal 2 – SLAM (background)
+# Terminal 2 – detection (background)
+make detection.run
+
+# Terminal 3 – SLAM (background)
 make slam.run
 
-# Terminal 3 – teleop (foreground, keyboard input here)
+# Terminal 4 – teleop (foreground, keyboard input here)
 make teleop.run
 
-# Terminal 4 – recorder (optional, foreground)
+# Terminal 5 – recorder (optional, foreground)
 make recorder.run
 ```
 
@@ -369,6 +442,7 @@ To stop background nodes:
 
 ```bash
 make camera.stop
+make detection.stop
 make slam.stop
 # teleop and recorder are stopped with CTRL-C in their own terminals
 ```
