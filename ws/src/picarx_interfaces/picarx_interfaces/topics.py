@@ -19,3 +19,6 @@ PARAMETER_EVENTS = "/parameter_events"
 ROSOUT           = "/rosout"
 TF               = "/tf"
 EVENTS_WRITE_SPLIT = "/events/write_split"
+
+# Hailo Object Detection
+DETECTIONS        = "/hailo/detections"
