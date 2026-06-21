@@ -15,7 +15,7 @@ from picarx_interfaces.topics import (
     DETECTIONS,
 )
 
-HEF_PATH = '/usr/local/hailo/resources/models/hailo8/yolov8s.hef'  # Update this path to your HEF file
+HEF_PATH = '/usr/local/hailo/resources/models/hailo8/yolov8m.hef'  # Update this path to your HEF file
 
 class HailoObjectDetectionNode(Node):
     def __init__(self):
